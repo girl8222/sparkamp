@@ -22,7 +22,7 @@ auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
 
 api = tweepy.API(auth)
-resultFile = open("output.csv","w",newline='', encoding ="utf-8")
+resultFile = open("outputwhy.csv","w",newline='', encoding ="utf-8")
 wr= csv.writer(resultFile, dialect = "excel")
 
 overall_list = []
@@ -33,7 +33,7 @@ for i in range(1, len(a)):
     try:
         tweets = api.user_timeline(screen_name=a[i])
     except Exception:
-#        overall_list.append("error")
+        overall_list.append("error")
         result_row.append("error")
         wr.writerows([result_row])
         continue
@@ -45,7 +45,7 @@ for i in range(1, len(a)):
 
     aList = re.sub(r"http\S+", "", aList)  
     aList.replace("\n", "")
-#    overall_list.append(aList)
+    overall_list.append(aList)
     result_row.append(repr(aList))
     wr.writerows([result_row])
     
@@ -67,4 +67,32 @@ for i in range(len(overall_list)):
 from sklearn.feature_extraction import text
 from sklearn.feature_extraction.text import TfidfVectorizer
 vectorizer = TfidfVectorizer(min_df=1,stop_words=text.ENGLISH_STOP_WORDS)
-X_tfidf = vectorizer.fit_transform(processed_twenty_train)
+X = vectorizer.fit_transform(processed_twenty_train)
+
+from sklearn.feature_extraction.text import TfidfTransformer
+tfidf_transformer = TfidfTransformer()
+X_train_tfidf = tfidf_transformer.fit_transform(X)
+print (X_train_tfidf.shape)
+
+# find 10 most related words
+import numpy
+vocab = vectorizer.get_feature_names()
+
+print ("Answer of 10 most related words:")
+n_top = 10;
+for index in range(0,len(overall_list)):
+    result = []
+    vec = X_train_tfidf[index].toarray()
+    #pop 10 max items
+    for i in range(n_top):
+        #find current max
+        max_term_id = numpy.where(vec == vec.max())[1] 
+        max_term_id = max_term_id[0]
+        vec[0][max_term_id] = 0
+        
+        result.append(int(max_term_id))
+    print (a[index],":")
+    ans = ""
+    for i in result :
+        ans += vocab[i] + ","
+    print ("   ",ans)
